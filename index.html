@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLS.js Example</title>
+</head>
+
+<body>
+
+    <video id="video" controls></video>
+
+    <!-- <script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script> -->
+    <!-- <script>
+        if (Hls.isSupported()) {
+            var video = document.getElementById('video');
+            var hls = new Hls();
+
+            // URL to your local HLS stream (playlist.m3u8)
+            var streamURL = './master.m3u8.m3u8';
+
+            hls.loadSource(streamURL);
+            hls.attachMedia(video);
+
+            hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                video.play();
+            });
+
+
+            const textDecoder = new TextDecoder();
+
+            hls.media.textTracks.addEventListener('addtrack', (event) => {
+                if (event.track.kind === 'metadata') {
+                    event.track.mode = 'hidden'
+                    event.track.addEventListener('cuechange', (event) => {
+                        Array.prototype.slice.call(event.target.activeCues).forEach(cue => {
+                            console.log(video.currentTime, cue.value.data);
+                            console.log("cue value", textDecoder.decode(cue.value.data));
+                        });
+                    })
+                }
+            });
+
+            hls.on(Hls.Events.FRAG_PARSING_METADATA, function (event, data) {
+                data.samples.forEach(sample => {
+                    console.log(sample);
+                    console.log("frag parsing", textDecoder.decode(sample.data));
+                });
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // For Safari HLS support
+            video.src = streamURL;
+            video.addEventListener('canplay', function () {
+                video.play();
+            });
+        }
+    </script> -->
+    <script src="//vjs.zencdn.net/8.3.0/video.min.js"></script>
+
+    <script>
+        var video = document.getElementById('video');
+        const player = videojs(video, {
+            sources: [{
+                src: './master_1.m3u8',
+                // type: 'application/x-mpegURL'
+            }],
+            html5: {
+                vhs: {
+                    overrideNative: true
+                },
+            },
+            autoplay: true,
+
+        });
+
+        console.log("player.textTracks", player.textTracks());
+        player.textTracks().addEventListener('addtrack', event => {
+            console.log("addTrackEvent called", event.track.kind);
+            if (!event.track) {
+                console.log("player event.track doesnt exist");
+                return;
+            }
+
+            if (event.track.kind === 'metadata') {
+                const track = event.track;
+                track.mode = 'hidden'
+                track.oncuechange = (ev) => {
+                    console.log("player.textTracks", player.textTracks());
+                    const activeCue = track.activeCues?.[0];
+                    console.log("activeCues value", activeCue?.value.data);
+                    if (activeCue && 'frame' in activeCue && activeCue.frame !== undefined) {
+                        let cueDataObj = activeCue.frame;
+                        const textDecoder = new TextDecoder();
+                        const data = textDecoder.decode(cueDataObj.data)
+                        console.log(cueDataObj.data, "id3 metadata");
+                        console.log("actual data", data);
+                    }
+
+                };
+            }
+
+            if (event.track.kind === 'segment-metadata') {
+                console.log("got segment metatda")
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>
